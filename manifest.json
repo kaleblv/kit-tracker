@@ -1,0 +1,14 @@
+{
+  "name": "Kit Tracker",
+  "short_name": "Kit Tracker",
+  "description": "Scale model kit project manager — builds, stash, paints, notes",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#17171A",
+  "theme_color": "#17171A",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ],
+  "categories": ["productivity", "utilities"]
+}

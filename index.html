@@ -1,0 +1,1048 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Kit Tracker">
+<meta name="theme-color" content="#17171A">
+<title>Kit Tracker</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* ── RESET ──────────────────────────────────────────────── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{height:100%;overflow:hidden}
+body{
+  height:100%;overflow:hidden;
+  background:#17171A;color:#E8E2D4;
+  font-family:'Space Grotesk',system-ui,sans-serif;
+  font-size:15px;-webkit-font-smoothing:antialiased;
+  -webkit-tap-highlight-color:transparent;user-select:none;
+}
+input,textarea,select{user-select:text;font-family:inherit}
+button{font-family:inherit;cursor:pointer}
+
+/* ── TOKENS ─────────────────────────────────────────────── */
+:root{
+  --bg:#17171A; --s1:#212126; --s2:#2B2B31; --bd:#38383F;
+  --gr:#7CA650; --gr-a:rgba(124,166,80,.15);
+  --am:#D4A84B; --am-a:rgba(212,168,75,.15);
+  --rd:#C24B38; --rd-a:rgba(194,75,56,.12);
+  --tx:#E8E2D4; --mu:#8A8A92;
+  --mo:'JetBrains Mono',monospace;
+  --r:10px; --nav:64px;
+}
+
+/* ── LAYOUT ─────────────────────────────────────────────── */
+#app{display:flex;flex-direction:column;height:100%;overflow:hidden}
+#bar{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:14px 16px 12px;border-bottom:1px solid var(--bd);
+  background:var(--bg);flex-shrink:0;z-index:10;
+}
+#bar h1{font-size:18px;font-weight:700;letter-spacing:-.02em}
+#bar-act{display:flex;gap:4px;align-items:center}
+#main{flex:1;overflow-y:auto;padding:14px 14px calc(var(--nav)+14px);-webkit-overflow-scrolling:touch}
+
+/* ── BOTTOM NAV ─────────────────────────────────────────── */
+#nav{
+  position:fixed;bottom:0;left:0;right:0;
+  height:var(--nav);background:var(--s1);
+  border-top:1px solid var(--bd);display:flex;z-index:50;
+}
+.tab{
+  flex:1;display:flex;flex-direction:column;align-items:center;
+  justify-content:center;gap:3px;font-size:10px;font-weight:600;
+  letter-spacing:.06em;text-transform:uppercase;
+  color:var(--mu);background:none;border:none;
+  padding:6px 0 calc(10px + env(safe-area-inset-bottom,0px));
+  transition:color .15s;
+}
+.tab svg{width:20px;height:20px;stroke-width:1.8;flex-shrink:0}
+.tab.on{color:var(--gr)}
+
+/* ── FAB ────────────────────────────────────────────────── */
+.fab{
+  position:fixed;bottom:78px;right:16px;
+  width:54px;height:54px;border-radius:50%;
+  background:#7CA650;color:#fff;border:none;
+  font-size:28px;line-height:1;
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 4px 24px rgba(124,166,80,.55);z-index:200;
+  transition:transform .15s;
+}
+.fab:active{transform:scale(.92)}
+
+/* ── ICON BUTTON ────────────────────────────────────────── */
+.ibtn{background:none;border:none;color:var(--mu);padding:5px;border-radius:6px;display:flex;align-items:center;transition:color .15s,background .15s}
+.ibtn:hover{color:var(--tx);background:var(--s2)}
+.ibtn svg{width:18px;height:18px}
+
+/* ── CARDS ──────────────────────────────────────────────── */
+.card{background:var(--s1);border:1px solid var(--bd);border-radius:var(--r);padding:13px 15px;margin-bottom:9px;cursor:pointer;transition:border-color .15s}
+.card:hover{border-color:rgba(124,166,80,.5)}
+.card:active{opacity:.85}
+.card-head{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:7px}
+.card-title{font-size:15px;font-weight:600;line-height:1.25;letter-spacing:-.01em}
+
+/* ── BADGES ─────────────────────────────────────────────── */
+.bgs{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:9px}
+.badge{font-family:var(--mo);font-size:10px;padding:2px 6px;border-radius:4px;border:1px solid transparent;font-weight:500}
+.b-dim{background:var(--s2);color:var(--mu);border-color:var(--bd)}
+.b-planning{background:var(--s2);color:var(--mu);border-color:var(--bd)}
+.b-active{background:var(--am-a);color:var(--am);border-color:var(--am)}
+.b-painting{background:rgba(180,100,200,.15);color:#C070D8;border-color:#C070D8}
+.b-finishing{background:rgba(70,140,210,.15);color:#4A9FD8;border-color:#4A9FD8}
+.b-done{background:var(--gr-a);color:var(--gr);border-color:var(--gr)}
+.b-lacquer{background:rgba(200,80,60,.2);color:#E07060}
+.b-enamel{background:rgba(60,130,210,.2);color:#5AACE8}
+.b-acrylic{background:var(--gr-a);color:var(--gr)}
+.b-other{background:var(--s2);color:var(--mu)}
+
+/* ── PROGRESS ───────────────────────────────────────────── */
+.prog-row{display:flex;align-items:center;gap:8px;margin-top:6px}
+.prog-bar{flex:1;height:3px;background:var(--bd);border-radius:3px;overflow:hidden}
+.prog-fill{height:100%;background:var(--gr);border-radius:3px;transition:width .3s}
+.prog-lbl{font-family:var(--mo);font-size:11px;color:var(--mu);white-space:nowrap}
+
+/* ── EMPTY ──────────────────────────────────────────────── */
+.empty{text-align:center;padding:56px 20px;color:var(--mu)}
+.empty .ei{font-size:38px;margin-bottom:12px}
+.empty h3{font-size:15px;font-weight:600;color:var(--tx);margin-bottom:5px}
+.empty p{font-size:13px;line-height:1.5}
+
+/* ── MODALS / SHEETS ────────────────────────────────────── */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:100;display:flex;align-items:flex-end;opacity:0;pointer-events:none;transition:opacity .2s}
+.overlay.on{opacity:1;pointer-events:all}
+.sheet{background:var(--bg);border-radius:16px 16px 0 0;border-top:1px solid var(--bd);width:100%;max-height:92vh;display:flex;flex-direction:column;transform:translateY(100%);transition:transform .26s cubic-bezier(.32,.72,0,1)}
+.overlay.on .sheet{transform:translateY(0)}
+.sh-head{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--bd);flex-shrink:0}
+.sh-title{font-size:16px;font-weight:700;letter-spacing:-.01em}
+.sh-body{flex:1;overflow-y:auto;padding:16px 18px 28px;-webkit-overflow-scrolling:touch}
+.sh-foot{padding:10px 18px calc(12px + env(safe-area-inset-bottom,0px));border-top:1px solid var(--bd);display:flex;gap:8px;flex-shrink:0}
+
+/* ── FORM ───────────────────────────────────────────────── */
+.fg{margin-bottom:13px}
+.fl{display:block;font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--mu);margin-bottom:5px}
+.fi,.fsel,.fta{width:100%;background:var(--s2);border:1px solid var(--bd);border-radius:8px;color:var(--tx);font-size:14px;padding:9px 11px;outline:none;transition:border-color .15s}
+.fi:focus,.fsel:focus,.fta:focus{border-color:var(--gr)}
+.fi::placeholder,.fta::placeholder{color:var(--mu)}
+.fi.mono{font-family:var(--mo)}
+.fsel{-webkit-appearance:none;appearance:none;cursor:pointer;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cpath fill='%238A8A92' d='M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;background-size:16px;padding-right:32px}
+.fsel option{background:var(--s2)}
+.fta{resize:vertical;min-height:72px;line-height:1.55}
+.frow{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+
+/* ── BUTTONS ────────────────────────────────────────────── */
+.btn{flex:1;padding:10px 14px;border-radius:8px;font-size:14px;font-weight:600;border:none;transition:opacity .15s}
+.btn:active{opacity:.82}
+.btn-p{background:var(--gr);color:#fff}
+.btn-s{background:var(--s2);color:var(--tx)}
+.btn-d{background:var(--rd);color:#fff}
+
+/* ── SECTION LABEL / DIVIDER ────────────────────────────── */
+.slbl{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--mu);margin:18px 0 8px}
+.slbl:first-child{margin-top:2px}
+.div{border:none;border-top:1px solid var(--bd);margin:14px 0}
+
+/* ── 3-STATE TASKS ──────────────────────────────────────── */
+.task{display:flex;align-items:center;gap:9px;padding:7px 0;border-bottom:1px solid var(--bd)}
+.task:last-child{border-bottom:none}
+.tcb{flex-shrink:0;width:22px;height:22px;display:flex;align-items:center;justify-content:center;border-radius:4px;cursor:pointer}
+.tcb:active{background:var(--s2)}
+.ttxt{flex:1;font-size:13px;line-height:1.35;cursor:pointer;transition:color .15s}
+.ttxt.s2{text-decoration:line-through;color:var(--mu)}
+/* on pointer devices, hide delete btn until hover */
+.tdel{background:none;border:none;color:var(--mu);padding:3px;border-radius:4px;display:flex;opacity:.35;transition:opacity .15s,color .15s}
+@media(hover:hover){.tdel{opacity:0}.task:hover .tdel{opacity:.7}}
+.tdel:hover,.tdel:active{color:var(--rd);opacity:1}
+.tdel svg{width:13px;height:13px;stroke-width:2}
+
+.add-row{display:flex;gap:7px;margin-top:8px}
+.add-in{flex:1;background:var(--s2);border:1px solid var(--bd);border-radius:8px;color:var(--tx);font-size:13px;padding:8px 10px;outline:none}
+.add-in:focus{border-color:var(--gr)}
+.add-in::placeholder{color:var(--mu)}
+.add-btn{background:var(--s2);border:1px solid var(--bd);border-radius:8px;color:var(--tx);padding:8px 13px;font-size:18px;line-height:1;transition:border-color .15s,color .15s}
+.add-btn:hover,.add-btn:active{border-color:var(--gr);color:var(--gr)}
+
+/* ── TASK TEMPLATES ─────────────────────────────────────── */
+.tpl-list{display:flex;flex-direction:column;gap:4px;margin-top:6px;max-height:200px;overflow-y:auto}
+.tpl-item{display:flex;align-items:center;gap:9px;padding:7px 10px;background:var(--s2);border:1px solid var(--bd);border-radius:7px;cursor:pointer;transition:border-color .15s}
+.tpl-item:hover,.tpl-item:active{border-color:var(--gr)}
+.tpl-item.sel{background:var(--gr-a);border-color:var(--gr)}
+.tpl-ck{width:16px;height:16px;flex-shrink:0;border:1.5px solid var(--bd);border-radius:3px;display:flex;align-items:center;justify-content:center;transition:background .15s,border-color .15s}
+.tpl-item.sel .tpl-ck{background:var(--gr);border-color:var(--gr)}
+.tpl-txt{font-size:12px;line-height:1.3}
+
+/* ── PAINT ROWS ─────────────────────────────────────────── */
+.paint-row{display:flex;align-items:center;gap:11px;padding:9px 13px;background:var(--s1);border:1px solid var(--bd);border-radius:8px;margin-bottom:7px}
+.swatch{width:30px;height:30px;border-radius:6px;border:1px solid rgba(255,255,255,.1);flex-shrink:0}
+.pi{flex:1;min-width:0}
+.pi-name{font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pi-code{font-family:var(--mo);font-size:11px;color:var(--mu)}
+
+/* ── STASH GRID ─────────────────────────────────────────── */
+.stash-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+@media(max-width:340px){.stash-grid{grid-template-columns:1fr}}
+.sk{background:var(--s1);border:1px solid var(--bd);border-radius:var(--r);padding:12px;position:relative}
+.sk-name{font-size:13px;font-weight:600;line-height:1.3;margin-bottom:5px;padding-right:18px}
+.sk-meta{font-family:var(--mo);font-size:10px;color:var(--mu)}
+.sk-del{position:absolute;top:8px;right:8px;background:none;border:none;color:var(--mu);padding:2px;opacity:0;transition:opacity .15s,color .15s}
+@media(hover:none){.sk-del{opacity:.4}}
+.sk:hover .sk-del{opacity:.7}
+.sk-del:hover{color:var(--rd);opacity:1}
+.sk-promote{margin-top:8px;width:100%;padding:5px;background:var(--gr-a);border:1px solid var(--gr);border-radius:6px;color:var(--gr);font-size:11px;font-weight:600}
+
+/* ── NOTES ──────────────────────────────────────────────── */
+.note-card{background:var(--s1);border:1px solid var(--bd);border-radius:var(--r);padding:13px 15px;margin-bottom:9px;cursor:pointer;transition:border-color .15s}
+.note-card:hover{border-color:rgba(124,166,80,.5)}
+.note-card:active{opacity:.85}
+.note-card-title{font-size:15px;font-weight:600;letter-spacing:-.01em;margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.note-card-preview{font-size:13px;color:var(--mu);line-height:1.45;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;margin-bottom:6px}
+.note-card-date{font-family:var(--mo);font-size:10px;color:var(--mu)}
+.note-title-in{width:100%;background:none;border:none;border-bottom:1px solid var(--bd);color:var(--tx);font-size:17px;font-weight:600;letter-spacing:-.01em;padding:0 0 10px;outline:none;margin-bottom:12px;transition:border-color .15s}
+.note-title-in:focus{border-color:var(--gr)}
+.note-title-in::placeholder{color:var(--mu)}
+.note-body-ta{width:100%;background:none;border:none;color:var(--tx);font-size:14px;line-height:1.75;padding:0;outline:none;resize:none;min-height:calc(100dvh - 240px)}
+.note-body-ta::placeholder{color:var(--mu)}
+.note-save-lbl{font-size:11px;color:var(--mu);text-align:right;margin-top:8px;min-height:16px}
+
+/* ── COLOR PICKER ───────────────────────────────────────── */
+.col-row{display:flex;align-items:center;gap:8px}
+.col-row input[type=color]{width:38px;height:34px;border:1px solid var(--bd);border-radius:6px;background:none;padding:2px;flex-shrink:0}
+
+/* ── DANGER ZONE ────────────────────────────────────────── */
+.danger{margin-top:20px;padding-top:16px;border-top:1px solid var(--bd)}
+
+/* ── SCROLLBAR ──────────────────────────────────────────── */
+::-webkit-scrollbar{width:3px}
+::-webkit-scrollbar-thumb{background:var(--bd);border-radius:2px}
+</style>
+</head>
+<body>
+
+<div id="app">
+  <header id="bar">
+    <h1 id="bar-title">Projects</h1>
+    <div id="bar-act"></div>
+  </header>
+  <main id="main"></main>
+</div>
+
+<nav id="nav">
+  <button class="tab on" data-v="projects">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>
+    Projects
+  </button>
+  <button class="tab" data-v="stash">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5" rx="1"/><line x1="10" y1="12" x2="14" y2="12"/></svg>
+    Stash
+  </button>
+  <button class="tab" data-v="paints">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg>
+    Paints
+  </button>
+  <button class="tab" data-v="notes">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+    Notes
+  </button>
+</nav>
+
+<!-- Project Form -->
+<div class="overlay" id="ol-pf">
+  <div class="sheet">
+    <div class="sh-head"><span class="sh-title" id="pf-title">New Project</span><button class="ibtn" onclick="closeOl('ol-pf')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>
+    <div class="sh-body" id="pf-body"></div>
+    <div class="sh-foot"><button class="btn btn-s" onclick="closeOl('ol-pf')">Cancel</button><button class="btn btn-p" id="pf-save">Save Project</button></div>
+  </div>
+</div>
+
+<!-- Project Detail -->
+<div class="overlay" id="ol-dt">
+  <div class="sheet">
+    <div class="sh-head">
+      <button class="ibtn" onclick="closeDetail()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg></button>
+      <span class="sh-title" id="dt-title" style="flex:1;margin:0 6px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></span>
+      <button class="ibtn" id="dt-edit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
+    </div>
+    <div class="sh-body" id="dt-body"></div>
+  </div>
+</div>
+
+<!-- Paint Form -->
+<div class="overlay" id="ol-pnt">
+  <div class="sheet">
+    <div class="sh-head"><span class="sh-title">Add Paint</span><button class="ibtn" onclick="closeOl('ol-pnt')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>
+    <div class="sh-body" id="pnt-body"></div>
+    <div class="sh-foot"><button class="btn btn-s" onclick="closeOl('ol-pnt')">Cancel</button><button class="btn btn-p" onclick="savePaint()">Add Paint</button></div>
+  </div>
+</div>
+
+<!-- Stash Form -->
+<div class="overlay" id="ol-sk">
+  <div class="sheet">
+    <div class="sh-head"><span class="sh-title">Add to Stash</span><button class="ibtn" onclick="closeOl('ol-sk')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>
+    <div class="sh-body" id="sk-body"></div>
+    <div class="sh-foot"><button class="btn btn-s" onclick="closeOl('ol-sk')">Cancel</button><button class="btn btn-p" onclick="saveStash()">Add Kit</button></div>
+  </div>
+</div>
+
+<!-- Note Detail -->
+<div class="overlay" id="ol-note">
+  <div class="sheet">
+    <div class="sh-head">
+      <button class="ibtn" onclick="closeNote()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg></button>
+      <span class="sh-title" style="flex:1;margin:0 8px" id="note-sh-title">Note</span>
+      <button class="ibtn" id="note-del-btn" style="color:var(--rd)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+      </button>
+    </div>
+    <div class="sh-body" id="note-body"></div>
+  </div>
+</div>
+
+<script>
+'use strict';
+
+// ══════════════════════════════════════════════════════
+//  DATA
+// ══════════════════════════════════════════════════════
+const DB = { projects:[], stash:[], paints:[], notes:[] };
+
+function loadDB() {
+  try {
+    DB.projects = JSON.parse(localStorage.getItem('kt_projects') || '[]');
+    DB.stash    = JSON.parse(localStorage.getItem('kt_stash')    || '[]');
+    DB.paints   = JSON.parse(localStorage.getItem('kt_paints')   || '[]');
+    // Notes migration: old format was a plain string, new format is Note[]
+    const raw = localStorage.getItem('kt_notes');
+    if (!raw) { DB.notes = []; return; }
+    try {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) { DB.notes = parsed; }
+      else if (typeof parsed === 'string' && parsed.trim()) {
+        DB.notes = [{ id:uid(), title:'', content:parsed, createdAt:Date.now(), updatedAt:Date.now() }];
+        save('notes');
+      } else { DB.notes = []; }
+    } catch {
+      // raw was stored as plain text (not JSON) — old single-note format
+      if (raw.trim()) {
+        DB.notes = [{ id:uid(), title:'', content:raw, createdAt:Date.now(), updatedAt:Date.now() }];
+        save('notes');
+      } else { DB.notes = []; }
+    }
+  } catch(e) {}
+}
+
+function save(k) {
+  localStorage.setItem('kt_' + k, JSON.stringify(DB[k]));
+}
+
+function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+
+// ══════════════════════════════════════════════════════
+//  NAVIGATION
+// ══════════════════════════════════════════════════════
+let view = 'projects';
+
+function gotoView(v) {
+  view = v;
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('on', t.dataset.v === v));
+  document.querySelectorAll('.fab').forEach(f => f.remove());
+  document.getElementById('bar-act').innerHTML = '';
+  document.getElementById('bar-title').textContent =
+    { projects:'Projects', stash:'Stash', paints:'Paints', notes:'Notes' }[v];
+  ({ projects:renderProjects, stash:renderStash, paints:renderPaints, notes:renderNotes })[v]();
+}
+
+document.querySelectorAll('.tab').forEach(b => b.addEventListener('click', () => gotoView(b.dataset.v)));
+
+// ══════════════════════════════════════════════════════
+//  MODALS
+// ══════════════════════════════════════════════════════
+function openOl(id)  { document.getElementById(id).classList.add('on'); }
+function closeOl(id) { document.getElementById(id).classList.remove('on'); }
+
+document.querySelectorAll('.overlay').forEach(o =>
+  o.addEventListener('click', e => { if (e.target === o) o.classList.remove('on'); })
+);
+
+// ══════════════════════════════════════════════════════
+//  UTILITIES
+// ══════════════════════════════════════════════════════
+function esc(s) {
+  return String(s || '')
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+
+function val(id) { return document.getElementById(id).value.trim(); }
+
+function makeFab(fn) {
+  const b = document.createElement('button');
+  b.className = 'fab'; b.innerHTML = '+'; b.onclick = fn;
+  document.body.appendChild(b);
+}
+
+// ── 3-STATE CHECKBOX SVGs (the app's visual signature) ──
+const CBX = [
+  /* 0 not started */
+  `<svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+    <rect x="2" y="2" width="18" height="18" rx="3.5" stroke="#45454C" stroke-width="1.8"/>
+  </svg>`,
+  /* 1 in progress */
+  `<svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+    <rect x="2" y="2" width="18" height="18" rx="3.5" stroke="#D4A84B" stroke-width="1.8"/>
+    <line x1="6" y1="11" x2="16" y2="11" stroke="#D4A84B" stroke-width="2.2" stroke-linecap="round"/>
+  </svg>`,
+  /* 2 done */
+  `<svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+    <rect x="2" y="2" width="18" height="18" rx="3.5" fill="#7CA650"/>
+    <polyline points="5.5,11.5 9,15 16.5,7" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+  </svg>`
+];
+
+const STATUS_LABELS = { planning:'Planning', active:'Active Build', painting:'Painting', finishing:'Finishing', done:'Done' };
+
+function statusBadge(s) {
+  return `<span class="badge b-${s}">${STATUS_LABELS[s] || s}</span>`;
+}
+
+function calcProg(tasks) {
+  const t = tasks.length;
+  if (!t) return { t:0, done:0, pct:0 };
+  const done = tasks.filter(x => x.state === 2).length;
+  return { t, done, pct: Math.round((done / t) * 100) };
+}
+
+// ══════════════════════════════════════════════════════
+//  TASK TEMPLATES
+// ══════════════════════════════════════════════════════
+const TPLS = [
+  'Research references & color scheme',
+  'Clean & prep parts (sprues, seams, sink marks)',
+  'Sub-assembly test fit',
+  'Prime & pre-shade',
+  'Basecoat — main lacquer colors',
+  'Masking & secondary colors',
+  'Interior & cockpit detail (enamels)',
+  'Chipping / salt weathering effects',
+  'Panel line wash',
+  'Decals',
+  'Gloss coat (pre-decal or pre-wash)',
+  'Matte / satin varnish — final top coat',
+  'Final assembly & display',
+];
+let tplSel = new Set();
+
+// ══════════════════════════════════════════════════════
+//  PROJECTS VIEW
+// ══════════════════════════════════════════════════════
+function renderProjects() {
+  document.getElementById('bar-act').innerHTML = `
+    <button class="ibtn" title="Export backup" onclick="exportData()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+    </button>
+    <button class="ibtn" title="Import backup" onclick="importData()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+    </button>`;
+
+  const m = document.getElementById('main');
+  if (!DB.projects.length) {
+    m.innerHTML = `<div class="empty"><div class="ei">🛩️</div><h3>No build projects yet</h3><p>Start tracking your first kit build.</p><button onclick="openProjectForm()" style="margin-top:18px;padding:11px 28px;background:#7CA650;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;font-family:inherit;cursor:pointer">+ New Project</button></div>`;
+  } else {
+    m.innerHTML = DB.projects.map(p => {
+      const pr = calcProg(p.tasks || []);
+      return `<div class="card" onclick="openDetail('${p.id}')">
+        <div class="card-head">
+          <span class="card-title">${esc(p.name)}</span>
+          ${statusBadge(p.status || 'planning')}
+        </div>
+        <div class="bgs">
+          ${p.brand  ? `<span class="badge b-dim">${esc(p.brand)}</span>` : ''}
+          ${p.scale  ? `<span class="badge b-dim">${esc(p.scale)}</span>` : ''}
+          ${p.kitNum ? `<span class="badge b-dim" style="font-family:var(--mo)">${esc(p.kitNum)}</span>` : ''}
+        </div>
+        <div class="prog-row">
+          <div class="prog-bar"><div class="prog-fill" style="width:${pr.pct}%"></div></div>
+          <span class="prog-lbl">${pr.t ? `${pr.done}/${pr.t}` : 'No tasks'}</span>
+        </div>
+      </div>`;
+    }).join('');
+  }
+  makeFab(() => openProjectForm());
+}
+
+// ══════════════════════════════════════════════════════
+//  PROJECT FORM  (add / edit)
+// ══════════════════════════════════════════════════════
+let editPid = null;
+
+function openProjectForm(pid = null, prefill = {}) {
+  editPid = pid;
+  tplSel  = new Set();
+  const p = pid ? DB.projects.find(x => x.id === pid) : null;
+  document.getElementById('pf-title').textContent = pid ? 'Edit Project' : 'New Project';
+
+  document.getElementById('pf-body').innerHTML = `
+    <div class="fg"><label class="fl">Kit Name</label>
+      <input class="fi" id="pf-name" placeholder="e.g. Fw 190 A-3" value="${esc(p?.name || prefill.name || '')}">
+    </div>
+    <div class="frow">
+      <div class="fg"><label class="fl">Brand</label>
+        <input class="fi" id="pf-brand" placeholder="Tamiya" value="${esc(p?.brand || prefill.brand || '')}">
+      </div>
+      <div class="fg"><label class="fl">Scale</label>
+        <input class="fi" id="pf-scale" placeholder="1:48" value="${esc(p?.scale || prefill.scale || '')}">
+      </div>
+    </div>
+    <div class="fg"><label class="fl">Kit Number</label>
+      <input class="fi mono" id="pf-kitnum" placeholder="e.g. 61037" value="${esc(p?.kitNum || prefill.kitNum || '')}">
+    </div>
+    <div class="fg"><label class="fl">Status</label>
+      <select class="fsel" id="pf-status">
+        ${['planning','active','painting','finishing','done'].map(s =>
+          `<option value="${s}" ${(p?.status||'planning')===s?'selected':''}>${STATUS_LABELS[s]}</option>`
+        ).join('')}
+      </select>
+    </div>
+    ${!pid ? `
+    <div class="fg">
+      <label class="fl">Starter Tasks <span style="font-weight:400;letter-spacing:0;text-transform:none;color:var(--mu)">(tap to select)</span></label>
+      <div class="tpl-list">
+        ${TPLS.map((t, i) => `
+          <div class="tpl-item" onclick="toggleTpl(${i},this)">
+            <div class="tpl-ck" id="tck-${i}"></div>
+            <span class="tpl-txt">${esc(t)}</span>
+          </div>`).join('')}
+      </div>
+    </div>` : ''}
+    ${pid ? `<div class="danger"><button class="btn btn-d" style="width:100%" onclick="deleteProject('${pid}')">Delete Project</button></div>` : ''}
+  `;
+
+  document.getElementById('pf-save').onclick = saveProject;
+  openOl('ol-pf');
+  setTimeout(() => document.getElementById('pf-name')?.focus(), 300);
+}
+
+function toggleTpl(i, el) {
+  if (tplSel.has(i)) { tplSel.delete(i); el.classList.remove('sel'); }
+  else               { tplSel.add(i);    el.classList.add('sel'); }
+  const ck = document.getElementById('tck-' + i);
+  if (ck) ck.innerHTML = tplSel.has(i)
+    ? `<svg width="10" height="10" viewBox="0 0 10 10" fill="none"><polyline points="1.5,5 3.8,8 8.5,2" stroke="white" stroke-width="1.8" stroke-linecap="round"/></svg>`
+    : '';
+}
+
+function saveProject() {
+  const name = val('pf-name');
+  if (!name) { document.getElementById('pf-name').focus(); return; }
+
+  if (editPid) {
+    const p = DB.projects.find(x => x.id === editPid);
+    Object.assign(p, {
+      name, brand: val('pf-brand'), scale: val('pf-scale'),
+      kitNum: val('pf-kitnum'), status: val('pf-status'),
+      updatedAt: Date.now()
+    });
+  } else {
+    const tasks = [...tplSel].sort((a,b) => a-b).map(i => ({ id:uid(), text:TPLS[i], state:0 }));
+    DB.projects.unshift({
+      id: uid(), name, brand: val('pf-brand'), scale: val('pf-scale'),
+      kitNum: val('pf-kitnum'), status: val('pf-status'),
+      tasks, palette: [], notes: '',
+      createdAt: Date.now(), updatedAt: Date.now()
+    });
+  }
+  save('projects');
+  closeOl('ol-pf');
+  if (editPid) openDetail(editPid); else renderProjects();
+}
+
+function deleteProject(pid) {
+  if (!confirm('Delete this project and all its tasks?')) return;
+  DB.projects = DB.projects.filter(x => x.id !== pid);
+  save('projects');
+  closeOl('ol-pf');
+  closeDetail();
+}
+
+// ══════════════════════════════════════════════════════
+//  PROJECT DETAIL
+// ══════════════════════════════════════════════════════
+let detPid = null;
+
+function openDetail(pid) {
+  detPid = pid;
+  const p = DB.projects.find(x => x.id === pid);
+  if (!p) return;
+  document.getElementById('dt-title').textContent = p.name;
+  document.getElementById('dt-edit').onclick = () => openProjectForm(pid);
+  renderDetailBody(p);
+  openOl('ol-dt');
+}
+
+function closeDetail() {
+  closeOl('ol-dt');
+  detPid = null;
+  renderProjects();
+}
+
+function renderDetailBody(p) {
+  const pr = calcProg(p.tasks || []);
+  document.getElementById('dt-body').innerHTML = `
+    <div class="bgs" style="margin-bottom:6px">
+      ${statusBadge(p.status || 'planning')}
+      ${p.brand  ? `<span class="badge b-dim">${esc(p.brand)}</span>` : ''}
+      ${p.scale  ? `<span class="badge b-dim">${esc(p.scale)}</span>` : ''}
+      ${p.kitNum ? `<span class="badge b-dim" style="font-family:var(--mo)">${esc(p.kitNum)}</span>` : ''}
+    </div>
+    <div class="prog-row" style="margin-bottom:4px">
+      <div class="prog-bar"><div class="prog-fill" id="dt-pf" style="width:${pr.pct}%"></div></div>
+      <span class="prog-lbl" id="dt-pl">${pr.t ? `${pr.pct}% · ${pr.done}/${pr.t} done` : 'No tasks yet'}</span>
+    </div>
+
+    <hr class="div">
+
+    <div class="slbl">Tasks</div>
+    <div id="dt-tasks">${(p.tasks||[]).map(t => taskRow(t, p.id)).join('')}</div>
+    <div class="add-row">
+      <input class="add-in" id="dt-new-task" placeholder="Add a task…" onkeydown="if(event.key==='Enter')addTask()">
+      <button class="add-btn" onclick="addTask()">+</button>
+    </div>
+
+    <hr class="div">
+
+    <div class="slbl">Color Plan</div>
+    <div id="dt-pal">${renderPaletteHTML(p)}</div>
+    <div class="add-row">
+      <input class="add-in" id="dt-new-pal" placeholder="e.g. Fuselage: LP-2, Cockpit: LP-41 + XF-55 1:1" onkeydown="if(event.key==='Enter')addPalEntry()">
+      <button class="add-btn" onclick="addPalEntry()">+</button>
+    </div>
+
+    <hr class="div">
+
+    <div class="slbl">Build Notes</div>
+    <textarea class="fta" id="dt-notes" rows="5"
+      placeholder="Thinning ratios, techniques, masking order, references…"
+      oninput="saveDetailNotes()">${esc(p.notes||'')}</textarea>
+  `;
+}
+
+/* ── Task rows ── */
+function taskRow(t, pid) {
+  return `<div class="task" id="tk-${t.id}">
+    <span class="tcb" onclick="cycleTask('${pid}','${t.id}')">${CBX[t.state]}</span>
+    <span class="ttxt s${t.state}" onclick="cycleTask('${pid}','${t.id}')">${esc(t.text)}</span>
+    <button class="tdel" onclick="delTask('${pid}','${t.id}')">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="4" x2="4" y2="12"/><line x1="4" y1="4" x2="12" y2="12"/></svg>
+    </button>
+  </div>`;
+}
+
+function cycleTask(pid, tid) {
+  const p = DB.projects.find(x => x.id === pid);
+  const t = p.tasks.find(x => x.id === tid);
+  t.state = (t.state + 1) % 3;
+  save('projects');
+  document.getElementById('tk-' + tid).outerHTML = taskRow(t, pid);
+  refreshProg(p);
+}
+
+function addTask() {
+  const inp = document.getElementById('dt-new-task');
+  const txt = inp.value.trim(); if (!txt) return;
+  const p = DB.projects.find(x => x.id === detPid);
+  const t = { id: uid(), text: txt, state: 0 };
+  p.tasks.push(t); save('projects');
+  inp.value = '';
+  document.getElementById('dt-tasks').insertAdjacentHTML('beforeend', taskRow(t, p.id));
+  refreshProg(p);
+}
+
+function delTask(pid, tid) {
+  const p = DB.projects.find(x => x.id === pid);
+  p.tasks = p.tasks.filter(x => x.id !== tid);
+  save('projects');
+  document.getElementById('tk-' + tid)?.remove();
+  refreshProg(p);
+}
+
+function refreshProg(p) {
+  const pr = calcProg(p.tasks || []);
+  const pf = document.getElementById('dt-pf');
+  const pl = document.getElementById('dt-pl');
+  if (pf) pf.style.width = pr.pct + '%';
+  if (pl) pl.textContent = pr.t ? `${pr.pct}% · ${pr.done}/${pr.t} done` : 'No tasks';
+}
+
+/* ── Color palette ── */
+function renderPaletteHTML(p) {
+  if (!(p.palette||[]).length)
+    return `<p style="font-size:12px;color:var(--mu)">No entries yet — add paint codes, ratios, part → color notes.</p>`;
+  return (p.palette||[]).map((c, i) => `
+    <div class="task" id="pal-${i}">
+      <span style="flex:1;font-size:12px;font-family:var(--mo);line-height:1.4">${esc(c)}</span>
+      <button class="tdel" onclick="delPalEntry(${i})">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="4" x2="4" y2="12"/><line x1="4" y1="4" x2="12" y2="12"/></svg>
+      </button>
+    </div>`).join('');
+}
+
+function refreshPal() {
+  const p = DB.projects.find(x => x.id === detPid);
+  if (p) document.getElementById('dt-pal').innerHTML = renderPaletteHTML(p);
+}
+
+function addPalEntry() {
+  const inp = document.getElementById('dt-new-pal');
+  const v = inp.value.trim(); if (!v) return;
+  const p = DB.projects.find(x => x.id === detPid);
+  if (!p.palette) p.palette = [];
+  p.palette.push(v); save('projects');
+  inp.value = ''; refreshPal();
+}
+
+function delPalEntry(i) {
+  const p = DB.projects.find(x => x.id === detPid);
+  p.palette.splice(i, 1); save('projects'); refreshPal();
+}
+
+function saveDetailNotes() {
+  const p = DB.projects.find(x => x.id === detPid);
+  if (p) { p.notes = document.getElementById('dt-notes').value; save('projects'); }
+}
+
+// ══════════════════════════════════════════════════════
+//  STASH VIEW
+// ══════════════════════════════════════════════════════
+function renderStash() {
+  const m = document.getElementById('main');
+  if (!DB.stash.length) {
+    m.innerHTML = `<div class="empty"><div class="ei">📦</div><h3>Stash is clear</h3><p>Log your unbuilt kits here.</p><button onclick="openStashForm()" style="margin-top:18px;padding:11px 28px;background:#7CA650;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;font-family:inherit;cursor:pointer">+ Add to Stash</button></div>`;
+  } else {
+    m.innerHTML = `<div class="stash-grid">
+      ${DB.stash.map(k => `
+        <div class="sk">
+          <button class="sk-del" onclick="delStash('${k.id}')">
+            <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="4" x2="4" y2="12"/><line x1="4" y1="4" x2="12" y2="12"/></svg>
+          </button>
+          <div class="sk-name">${esc(k.name)}</div>
+          <div class="sk-meta">${[k.brand, k.scale, k.kitNum].filter(Boolean).map(esc).join(' · ')}</div>
+          ${k.notes ? `<p style="font-size:11px;color:var(--mu);margin-top:5px;line-height:1.3">${esc(k.notes)}</p>` : ''}
+          <button class="sk-promote" onclick="promoteStash('${k.id}')">Start Build →</button>
+        </div>`).join('')}
+    </div>`;
+  }
+  makeFab(openStashForm);
+}
+
+function openStashForm() {
+  document.getElementById('sk-body').innerHTML = `
+    <div class="fg"><label class="fl">Kit Name</label>
+      <input class="fi" id="sk-name" placeholder="e.g. P-51D Mustang">
+    </div>
+    <div class="frow">
+      <div class="fg"><label class="fl">Brand</label>
+        <input class="fi" id="sk-brand" placeholder="Hasegawa">
+      </div>
+      <div class="fg"><label class="fl">Scale</label>
+        <input class="fi" id="sk-scale" placeholder="1:72">
+      </div>
+    </div>
+    <div class="fg"><label class="fl">Kit Number</label>
+      <input class="fi mono" id="sk-kitnum" placeholder="08193">
+    </div>
+    <div class="fg"><label class="fl">Notes</label>
+      <input class="fi" id="sk-notes" placeholder="Source, price, event…">
+    </div>
+  `;
+  openOl('ol-sk');
+  setTimeout(() => document.getElementById('sk-name')?.focus(), 300);
+}
+
+function saveStash() {
+  const name = val('sk-name'); if (!name) { document.getElementById('sk-name').focus(); return; }
+  DB.stash.unshift({ id:uid(), name, brand:val('sk-brand'), scale:val('sk-scale'), kitNum:val('sk-kitnum'), notes:val('sk-notes'), createdAt:Date.now() });
+  save('stash'); closeOl('ol-sk'); renderStash();
+}
+
+function delStash(id) {
+  DB.stash = DB.stash.filter(x => x.id !== id);
+  save('stash'); renderStash();
+}
+
+function promoteStash(id) {
+  const k = DB.stash.find(x => x.id === id); if (!k) return;
+  closeOl('ol-sk');
+  gotoView('projects');
+  openProjectForm(null, { name:k.name, brand:k.brand, scale:k.scale, kitNum:k.kitNum });
+}
+
+// ══════════════════════════════════════════════════════
+//  PAINTS VIEW
+// ══════════════════════════════════════════════════════
+function renderPaints() {
+  const m = document.getElementById('main');
+  if (!DB.paints.length) {
+    m.innerHTML = `<div class="empty"><div class="ei">🎨</div><h3>No paints logged</h3><p>Add your collection — LP, Mr. Color, Vallejo, enamels…</p><button onclick="openPaintForm()" style="margin-top:18px;padding:11px 28px;background:#7CA650;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;font-family:inherit;cursor:pointer">+ Add Paint</button></div>`;
+  } else {
+    const brands = [...new Set(DB.paints.map(p => p.brand || 'Other'))].sort();
+    m.innerHTML = brands.map(brand => {
+      const ps = DB.paints.filter(p => (p.brand||'Other') === brand);
+      return `<div style="margin-bottom:20px">
+        <div class="slbl">${esc(brand)}</div>
+        ${ps.map(p => `
+          <div class="paint-row">
+            <div class="swatch" style="background:${p.hex||'#555'}"></div>
+            <div class="pi">
+              <div class="pi-name">${esc(p.name)}</div>
+              ${p.code ? `<div class="pi-code">${esc(p.code)}</div>` : ''}
+            </div>
+            <span class="badge b-${p.type||'other'}">${p.type||'other'}</span>
+            <button class="ibtn" onclick="delPaint('${p.id}')">
+              <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="4" x2="4" y2="12"/><line x1="4" y1="4" x2="12" y2="12"/></svg>
+            </button>
+          </div>`).join('')}
+      </div>`;
+    }).join('');
+  }
+  makeFab(openPaintForm);
+}
+
+function openPaintForm() {
+  document.getElementById('pnt-body').innerHTML = `
+    <div class="fg"><label class="fl">Paint Name</label>
+      <input class="fi" id="pnt-name" placeholder="e.g. Light Green">
+    </div>
+    <div class="frow">
+      <div class="fg"><label class="fl">Code</label>
+        <input class="fi mono" id="pnt-code" placeholder="LP-2">
+      </div>
+      <div class="fg"><label class="fl">Brand</label>
+        <input class="fi" id="pnt-brand" placeholder="Tamiya">
+      </div>
+    </div>
+    <div class="fg"><label class="fl">Type</label>
+      <select class="fsel" id="pnt-type">
+        <option value="lacquer">Lacquer</option>
+        <option value="enamel">Enamel</option>
+        <option value="acrylic">Acrylic</option>
+        <option value="other">Other</option>
+      </select>
+    </div>
+    <div class="fg"><label class="fl">Approximate Color</label>
+      <div class="col-row">
+        <input type="color" id="pnt-hex" value="#888888">
+        <input class="fi mono" id="pnt-hex-txt" value="#888888" placeholder="#rrggbb" oninput="syncHex(this.value)">
+      </div>
+    </div>
+  `;
+  document.getElementById('pnt-hex').addEventListener('input', e => {
+    document.getElementById('pnt-hex-txt').value = e.target.value;
+  });
+  openOl('ol-pnt');
+  setTimeout(() => document.getElementById('pnt-name')?.focus(), 300);
+}
+
+function syncHex(v) {
+  if (/^#[0-9a-fA-F]{6}$/.test(v)) document.getElementById('pnt-hex').value = v;
+}
+
+function savePaint() {
+  const name = val('pnt-name'); if (!name) { document.getElementById('pnt-name').focus(); return; }
+  DB.paints.push({
+    id:uid(), name, code:val('pnt-code'), brand:val('pnt-brand'),
+    type:val('pnt-type'), hex:document.getElementById('pnt-hex').value
+  });
+  save('paints'); closeOl('ol-pnt'); renderPaints();
+}
+
+function delPaint(id) {
+  DB.paints = DB.paints.filter(x => x.id !== id);
+  save('paints'); renderPaints();
+}
+
+// ══════════════════════════════════════════════════════
+//  NOTES VIEW
+// ══════════════════════════════════════════════════════
+let notesTmr = null;
+let curNoteId = null;
+
+function relTime(ts) {
+  if (!ts) return '';
+  const d = Date.now() - ts;
+  if (d < 60000)    return 'Just now';
+  if (d < 3600000)  return Math.floor(d / 60000) + 'm ago';
+  if (d < 86400000) return Math.floor(d / 3600000) + 'h ago';
+  if (d < 604800000)return Math.floor(d / 86400000) + 'd ago';
+  return new Date(ts).toLocaleDateString('es-MX', { day:'numeric', month:'short' });
+}
+
+function noteDisplayTitle(n) {
+  if (n.title && n.title.trim()) return n.title.trim();
+  const first = (n.content || '').split('\n')[0].trim();
+  return first || 'Untitled';
+}
+
+function notePreviewText(n) {
+  const lines = (n.content || '').split('\n');
+  // Skip first line if it matches the title (when no explicit title set)
+  const start = (!n.title && lines[0]?.trim()) ? 1 : 0;
+  return lines.slice(start).join(' ').trim().slice(0, 120);
+}
+
+function renderNotes() {
+  const m = document.getElementById('main');
+  if (!DB.notes.length) {
+    m.innerHTML = `<div class="empty"><div class="ei">📝</div><h3>No notes yet</h3><p>Jot down ratios, techniques, suppliers, anything hobby-related.</p><button onclick="newNote()" style="margin-top:18px;padding:11px 28px;background:#7CA650;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;font-family:inherit;cursor:pointer">+ New Note</button></div>`;
+  } else {
+    m.innerHTML = DB.notes.map(n => {
+      const preview = notePreviewText(n);
+      return `<div class="note-card" onclick="openNote('${n.id}')">
+        <div class="note-card-title">${esc(noteDisplayTitle(n))}</div>
+        ${preview ? `<div class="note-card-preview">${esc(preview)}</div>` : ''}
+        <div class="note-card-date">${relTime(n.updatedAt)}</div>
+      </div>`;
+    }).join('');
+  }
+  makeFab(newNote);
+}
+
+function newNote() {
+  const n = { id:uid(), title:'', content:'', createdAt:Date.now(), updatedAt:Date.now() };
+  DB.notes.unshift(n);
+  save('notes');
+  openNote(n.id, true);
+}
+
+function openNote(id, focusContent = false) {
+  curNoteId = id;
+  const n = DB.notes.find(x => x.id === id);
+  if (!n) return;
+
+  document.getElementById('note-sh-title').textContent = noteDisplayTitle(n);
+  document.getElementById('note-del-btn').onclick = () => deleteNote(id);
+
+  document.getElementById('note-body').innerHTML = `
+    <input class="note-title-in" id="note-title" placeholder="Title" value="${esc(n.title||'')}">
+    <textarea class="note-body-ta" id="note-content" placeholder="Write anything — ratios, references, suppliers, ideas…">${esc(n.content||'')}</textarea>
+    <div class="note-save-lbl" id="note-lbl"></div>
+  `;
+
+  const persist = () => {
+    const n2 = DB.notes.find(x => x.id === curNoteId);
+    if (!n2) return;
+    n2.title   = document.getElementById('note-title').value;
+    n2.content = document.getElementById('note-content').value;
+    n2.updatedAt = Date.now();
+    document.getElementById('note-sh-title').textContent = noteDisplayTitle(n2);
+    document.getElementById('note-lbl').textContent = 'Saving…';
+    clearTimeout(notesTmr);
+    notesTmr = setTimeout(() => {
+      save('notes');
+      const lbl = document.getElementById('note-lbl');
+      if (lbl) lbl.textContent = 'Saved ✓';
+    }, 600);
+  };
+
+  document.getElementById('note-title').addEventListener('input', persist);
+  document.getElementById('note-content').addEventListener('input', persist);
+
+  openOl('ol-note');
+  setTimeout(() => {
+    const target = focusContent
+      ? document.getElementById('note-content')
+      : document.getElementById('note-title');
+    target?.focus();
+  }, 300);
+}
+
+function closeNote() {
+  clearTimeout(notesTmr);
+  // Flush any pending save
+  const n = DB.notes.find(x => x.id === curNoteId);
+  if (n) {
+    const titleEl   = document.getElementById('note-title');
+    const contentEl = document.getElementById('note-content');
+    if (titleEl)   n.title   = titleEl.value;
+    if (contentEl) n.content = contentEl.value;
+    n.updatedAt = Date.now();
+    // Remove if completely empty
+    if (!n.title.trim() && !n.content.trim()) {
+      DB.notes = DB.notes.filter(x => x.id !== curNoteId);
+    }
+    save('notes');
+  }
+  curNoteId = null;
+  closeOl('ol-note');
+  renderNotes();
+}
+
+function deleteNote(id) {
+  if (!confirm('Delete this note?')) return;
+  DB.notes = DB.notes.filter(x => x.id !== id);
+  save('notes');
+  curNoteId = null;
+  closeOl('ol-note');
+  renderNotes();
+}
+
+// ══════════════════════════════════════════════════════
+//  EXPORT / IMPORT
+// ══════════════════════════════════════════════════════
+function exportData() {
+  const blob = new Blob([JSON.stringify({
+    projects: DB.projects, stash: DB.stash,
+    paints: DB.paints, notes: DB.notes,
+    exportedAt: new Date().toISOString()
+  }, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `kit-tracker-${new Date().toISOString().slice(0,10)}.json`;
+  a.click();
+}
+
+function importData() {
+  const inp = document.createElement('input');
+  inp.type = 'file'; inp.accept = '.json';
+  inp.onchange = e => {
+    const file = e.target.files[0]; if (!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => {
+      try {
+        const data = JSON.parse(ev.target.result);
+        const msg = `Import ${data.projects?.length||0} projects, ${data.stash?.length||0} stash kits, ${data.paints?.length||0} paints?\n\nThis will replace all current data.`;
+        if (!confirm(msg)) return;
+        if (data.projects != null) { DB.projects = data.projects; save('projects'); }
+        if (data.stash    != null) { DB.stash    = data.stash;    save('stash'); }
+        if (data.paints   != null) { DB.paints   = data.paints;   save('paints'); }
+        if (data.notes    != null) { DB.notes    = data.notes;    save('notes'); }
+        gotoView('projects');
+      } catch { alert('Invalid backup file.'); }
+    };
+    reader.readAsText(file);
+  };
+  inp.click();
+}
+
+// ══════════════════════════════════════════════════════
+//  PWA
+// ══════════════════════════════════════════════════════
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('./sw.js').catch(() => {});
+}
+
+// ══════════════════════════════════════════════════════
+//  INIT
+// ══════════════════════════════════════════════════════
+loadDB();
+gotoView('projects');
+</script>
+</body>
+</html>
