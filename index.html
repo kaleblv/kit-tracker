@@ -618,7 +618,19 @@ function renderDetailBody(p) {
 
     <hr class="div">
 
-    <div class="slbl">Color Plan</div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin:18px 0 8px">
+      <span style="font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--mu)">Color Plan</span>
+      <div style="display:flex;gap:2px">
+        <button class="ibtn" title="Import color plan from JSON" onclick="importColorPlan()" style="padding:4px;font-size:10px;gap:3px;color:var(--mu)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          Import
+        </button>
+        <button class="ibtn" title="Export color plan as JSON" onclick="exportColorPlan()" style="padding:4px;font-size:10px;gap:3px;color:var(--mu)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Export
+        </button>
+      </div>
+    </div>
     <div id="dt-pal">${renderPaletteHTML(p)}</div>
     <div class="add-row">
       <input class="add-in" id="dt-new-pal" placeholder="e.g. Fuselage: LP-2, Cockpit: LP-41 + XF-55 1:1" onkeydown="if(event.key==='Enter')addPalEntry()">
@@ -711,6 +723,47 @@ function addPalEntry() {
 function delPalEntry(i) {
   const p = DB.projects.find(x => x.id === detPid);
   p.palette.splice(i, 1); save('projects'); refreshPal();
+}
+
+function exportColorPlan() {
+  const p = DB.projects.find(x => x.id === detPid);
+  if (!p || !(p.palette||[]).length) { alert('No color plan entries to export.'); return; }
+  const data = { kit: p.name, brand: p.brand, scale: p.scale, colorPlan: p.palette, exportedAt: new Date().toISOString() };
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = (p.name || 'colorplan').replace(/[^a-z0-9]/gi, '_') + '-colorplan.json';
+  a.click();
+}
+
+function importColorPlan() {
+  const inp = document.createElement('input');
+  inp.type = 'file'; inp.accept = '.json,.txt';
+  inp.onchange = e => {
+    const file = e.target.files[0]; if (!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => {
+      try {
+        const raw = JSON.parse(ev.target.result);
+        // Accept: string[], {colorPlan:[]}, {palette:[]}
+        let entries = [];
+        if (Array.isArray(raw))                    entries = raw.filter(Boolean).map(String);
+        else if (Array.isArray(raw.colorPlan))     entries = raw.colorPlan.filter(Boolean).map(String);
+        else if (Array.isArray(raw.palette))       entries = raw.palette.filter(Boolean).map(String);
+        else throw new Error('Expected an array or {colorPlan:[...]}');
+        if (!entries.length) { alert('File contained no entries.'); return; }
+        const p = DB.projects.find(x => x.id === detPid);
+        if (!p) return;
+        const existing = (p.palette||[]).length;
+        let replace = true;
+        if (existing > 0) replace = confirm(`Replace existing ${existing} entries with ${entries.length} imported entries?\n\nOK = Replace all   Cancel = Append`);
+        p.palette = replace ? entries : [...(p.palette||[]), ...entries];
+        save('projects'); refreshPal();
+      } catch(err) { alert('Could not read file: ' + err.message); }
+    };
+    reader.readAsText(file);
+  };
+  inp.click();
 }
 
 function saveDetailNotes() {
